@@ -53,7 +53,7 @@ impl CoffeeEntry {
         preparation: Preparation,
         rating: u8,
     ) -> Result<Self, String> {
-        if rating < 1 || rating > 10 {
+        if !(1..=10).contains(&rating) {
             return Err(format!("Rating must be between 1 and 10, got {}", rating));
         }
 
@@ -70,6 +70,8 @@ impl CoffeeEntry {
     }
 
     /// Create an entry with a specific timestamp (useful for testing)
+    /// This is a builder-style method that takes the parameters and timestamp separately
+    #[allow(clippy::too_many_arguments)]
     pub fn with_timestamp(
         timestamp: DateTime<Local>,
         brand: String,
@@ -80,7 +82,8 @@ impl CoffeeEntry {
         preparation: Preparation,
         rating: u8,
     ) -> Result<Self, String> {
-        if rating < 1 || rating > 10 {
+        // Use the existing validation logic from new()
+        if !(1..=10).contains(&rating) {
             return Err(format!("Rating must be between 1 and 10, got {}", rating));
         }
 
