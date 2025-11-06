@@ -23,7 +23,7 @@ pub fn save_entry_to_file<P: AsRef<Path>>(entry: &CoffeeEntry, path: P) -> std::
     };
 
     // Write new entry followed by existing content
-    let full_content = format!("{}\n{}", new_content, existing_content);
+    let full_content = format!("{}{}", new_content, existing_content);
     fs::write(path, full_content)?;
 
     Ok(())
