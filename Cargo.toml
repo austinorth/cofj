@@ -1,0 +1,11 @@
+[package]
+name = "cofj"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+inquire = "0.7"
+chrono = "0.4"
+
+[dev-dependencies]
+tempfile = "3.8"
