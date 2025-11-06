@@ -1,0 +1,102 @@
+name: CI/CD Pipeline
+
+# Triggers: Run on pushes to main and all pull requests
+# This ensures code is tested before merging and on every main branch update
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Environment variables available to all jobs
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # First job: Run tests
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository code
+      # This is like doing a 'git clone' of your repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Rust toolchain
+      # Using rust-toolchain action for better caching and toolchain management
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      # Step 3: Cache cargo dependencies
+      # This speeds up subsequent runs by caching ~/.cargo and target/
+      # Similar to how you'd cache pip packages or Go modules in CI
+      - name: Cache cargo registry and build
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # Step 4: Run tests
+      # Using --verbose for detailed output, helpful for debugging CI failures
+      - name: Run tests
+        run: cargo test --verbose
+
+      # Step 5: Run clippy (Rust linter)
+      # Optional but recommended - catches common mistakes and non-idiomatic code
+      # Similar to running pylint or golangci-lint
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  # Second job: Build binaries
+  # This runs after tests pass (implicit dependency)
+  build:
+    name: Build Binaries
+    needs: test  # Only run if test job succeeds
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry and build
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # Build in release mode for optimized binaries
+      # Debug builds are larger and slower - release mode is what you'd ship
+      - name: Build release binary
+        run: cargo build --release --verbose
+
+      # Upload the built binary as an artifact
+      # This makes it downloadable from the GitHub Actions UI
+      # Similar to storing artifacts in Jenkins or GitLab CI
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: cofj-binary
+          path: target/release/cofj
+          # Artifacts are kept for 90 days by default, adjust if needed
+          retention-days: 30
